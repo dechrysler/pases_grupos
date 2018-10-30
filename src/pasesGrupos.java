@@ -1,8 +1,10 @@
 import java.util.concurrent.Semaphore;
 
 class objeto{
+	public static Semaphore semaforo=new Semaphore(5);
+	public static Semaphore semaforoSala=new Semaphore(5);
 	public static int contador_filas=0;
-	public static int  personas=5;
+	public static int  PERSONAS=5;
 	public static int contador_personas=0;
 	static ventanas ventana= new ventanas("Fila del la feria.");
 	static ventanas ventana2= new ventanas("Fila del la atraccion.");
@@ -10,31 +12,38 @@ class objeto{
 
 class ejecutaHilos extends Thread{
 	
-	private Semaphore sema;
-	int id=0;
-	objeto contadores;
-	public  ejecutaHilos(Semaphore s ) {
-		this.sema=s;
-
+	private int id;
+	
+	public  ejecutaHilos( int j) {
+		this.id=j;
 	}
 	public void run() {
 		
 		
 		try {
+			objeto.ventana.escribecadena("Hay "+objeto.contador_filas+"personas esperando en la fila\n");			
 			sleep(ramdon());
-			objeto.ventana.escribecadena("Hay "+objeto.contador_filas+"personas esperando en la fila\n");
-			sleep(ramdon());
-			sema.acquire();
-			objeto.contador_personas++;
-			objeto.contador_filas--;
-			objeto.ventana2.escribecadena("Esperando en la sala interna de la cola"+objeto.contador_personas+"\n");
-			objeto.ventana.escribecadena("Hay "+objeto.contador_filas+"personas esperando en la fila\n");	
-			if(objeto.contador_personas==5) {	
-				objeto.contador_personas=objeto.contador_personas - 5;
-				sema.release(5);
-				objeto.ventana2.escribecadena("Salieron ya 5 personas.Pueden pasar las siguientes\n");
+			if(objeto.semaforo.availablePermits()==1 && objeto.semaforoSala.availablePermits()==5) {
+				objeto.semaforo.acquire();
+				objeto.ventana2.escribecadena("Soy la persona" + id +" y me han dado un pase"+"\n");
+				for(int i=0;i<objeto.PERSONAS;i++) {
+					objeto.contador_filas--;
+					objeto.semaforoSala.acquire();
+					objeto.ventana2.escribecadena("Se han montado "+(i+1)+" personas en la atraccion."+"\n");
+					ramdon2();
+				}
+				objeto.semaforoSala.release(5);
+				objeto.semaforo.release(5);
+				System.out.println("1");
+				objeto.ventana.escribecadena("Hay "+objeto.contador_filas+"personas esperando en la fila\n");
+			}
+			else {
+				objeto.semaforo.acquire();
+				objeto.ventana2.escribecadena("Soy la persona" + id +" y me han dado un pase"+"\n");	
 				sleep(ramdon());
 			}
+			
+			
 		} catch (InterruptedException e) {
 		
 			e.printStackTrace();
@@ -52,12 +61,12 @@ public class pasesGrupos {
 
 	public final static int PERSONAS=30;
 	public static void main(String[]agrs) throws InterruptedException {
-		Semaphore semaforo=new Semaphore(5);
+		
 		ejecutaHilos hilos[];
 		hilos= new ejecutaHilos[PERSONAS];
 		
 		for(int i=0;i<PERSONAS;i++) {
-			hilos[i]= new ejecutaHilos(semaforo);
+			hilos[i]= new ejecutaHilos((i+1));
 			hilos[i].start();
 			objeto.contador_filas++;
 			hilos[i].join((long) hilos[i].ramdon2());
